@@ -7,7 +7,7 @@ interface CustomPlanModalProps {
   isOpen: boolean;
   onClose: () => void;
   project?: SharedProject;
-  onSubscribe?: (selectedFeatures: string[], userCount: number, duration: string) => void;
+  onSubscribe?: (selectedFeatures: string[], userCount: number, duration: string, featureUsageAmounts?: Record<string, number>) => void;
 }
 
 function getFocusable(container: HTMLElement | null): HTMLElement[] {
@@ -31,11 +31,10 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
   project,
   onSubscribe 
 }) => {
-  const allFeatures = project?.features 
-    ? [...new Set(project.features.map(f => f.name))] 
-    : [];
+  const allFeatures = project?.features || [];
 
   const [selected, setSelected] = useState<string[]>([]);
+  const [featureUsageAmounts, setFeatureUsageAmounts] = useState<Record<string, number>>({});
   const [featureCategory, setFeatureCategory] = useState<"Countable" | "Standard" | "AI">("Countable");
   const [summaryCategory, setSummaryCategory] = useState<"Countable" | "Standard" | "AI">("Countable");
   const [userCount, setUserCount] = useState<number>(1);
@@ -103,12 +102,38 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
     return () => currentPanel?.removeEventListener('keydown', handler as EventListener);
   }, [mounted]);
 
-  const handleAdd = (feature: string) => {
-    setSelected((prev) => (prev.includes(feature) ? prev : [...prev, feature]));
+  const handleAdd = (featureName: string) => {
+    setSelected((prev) => {
+      if (prev.includes(featureName)) return prev;
+      
+      // Set default usage amount for Limits features
+      const featureObj = project?.features?.find(f => f.name === featureName);
+      if (featureObj?.featureType === "Limits" && featureObj.countableData) {
+        setFeatureUsageAmounts(prevAmounts => ({
+          ...prevAmounts,
+          [featureName]: featureObj.countableData!.usageCount
+        }));
+      }
+      
+      return [...prev, featureName];
+    });
   };
 
   const handleRemove = (feature: string) => {
     setSelected((prev) => prev.filter((f) => f !== feature));
+    // Remove usage amount when feature is removed
+    setFeatureUsageAmounts(prev => {
+      const updated = { ...prev };
+      delete updated[feature];
+      return updated;
+    });
+  };
+
+  const handleUsageAmountChange = (featureName: string, amount: number) => {
+    setFeatureUsageAmounts(prev => ({
+      ...prev,
+      [featureName]: Math.max(0, amount) // Ensure non-negative
+    }));
   };
 
   useEffect(() => {
@@ -124,15 +149,31 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
     }
   }, [project, subscriptionDuration]);
 
+  // Calculate base monthly price (before discount)
+  const calculateBaseMonthlyPrice = (): number => {
+    if (!project?.features || selected.length === 0) return 0;
+    const selectedFeatureObjects = project.features.filter(f => selected.includes(f.name));
+    const basePrice = selectedFeatureObjects.reduce((total, feature) => {
+      // For Usage Based features, calculate based on usage amount
+      if (feature.featureType === "Usage Based" && feature.countableData) {
+        const usageAmount = featureUsageAmounts[feature.name] || 0;
+        return total + (feature.countableData.countPrice * usageAmount);
+      }
+      // For Limits features, calculate based on limit amount
+      if (feature.featureType === "Limits" && feature.countableData) {
+        const limitAmount = featureUsageAmounts[feature.name] || feature.countableData.usageCount || 0;
+        return total + (feature.countableData.countPrice * limitAmount);
+      }
+      // For Standard features, use basePrice
+      return total + feature.basePrice;
+    }, 0);
+    return basePrice * userCount;
+  };
+
   const calculateTotalPrice = (): number => {
     if (!project?.features || selected.length === 0) return 0;
     
-    const selectedFeatureObjects = project.features.filter(f => selected.includes(f.name));
-    const basePrice = selectedFeatureObjects.reduce((total, feature) => {
-      return total + feature.basePrice;
-    }, 0);
-    
-    const monthlyPrice = basePrice * userCount;
+    const monthlyPrice = calculateBaseMonthlyPrice();
 
     const mg = project?.monthGroupDiscounts || {};
     let months = 1;
@@ -195,7 +236,7 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
 
   const handleSubscribe = () => {
     if (canSubscribe && onSubscribe) {
-      onSubscribe(selected, userCount, subscriptionDuration);
+      onSubscribe(selected, userCount, subscriptionDuration, featureUsageAmounts);
     }
   };
 
@@ -231,18 +272,48 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
             </div>
 
             <ul className="space-y-2 overflow-y-auto pr-1" role="list">
-              {allFeatures.map((feature, idx) => (
-                <li key={idx} className="flex justify-between items-center bg-white border rounded-md h-[64px] px-3 py-2">
-                  <span className="text-sm">{feature}</span>
-                  <button
-                    onClick={() => handleAdd(feature)}
-                    className="h-9 w-9 flex justify-center items-center bg-emerald-600 hover:bg-emerald-700 text-white rounded-[8px]"
-                    aria-label={`Add ${feature}`}
-                  >
-                    <Plus size={18} />
-                  </button>
-                </li>
-              ))}
+              {allFeatures.map((feature, idx) => {
+                const featureName = typeof feature === 'string' ? feature : feature.name;
+                const featureObj = project?.features?.find(f => f.name === featureName);
+                const isSelected = selected.includes(featureName);
+                const isUsageBased = featureObj?.featureType === "Usage Based";
+                const isLimits = featureObj?.featureType === "Limits";
+                const countableData = featureObj?.countableData;
+                
+                return (
+                  <li key={idx} className={`flex justify-between items-center bg-white border rounded-md ${isSelected && (isUsageBased || isLimits) && countableData ? 'min-h-[64px]' : 'h-[64px]'} px-3 py-2`}>
+                    <div className="flex flex-col gap-1 flex-1">
+                      <span className="text-sm font-medium">{featureName}</span>
+                      {featureObj && (
+                        <div className="text-xs text-gray-500">
+                          {isUsageBased || isLimits ? (
+                            countableData ? (
+                              <span>
+                                {formatPrice(countableData.countPrice, project?.currency || 'USD')} per {countableData.condition}
+                              </span>
+                            ) : (
+                              <span>{formatPrice(featureObj.basePrice, project?.currency || 'USD')}</span>
+                            )
+                          ) : (
+                            <span>{formatPrice(featureObj.basePrice, project?.currency || 'USD')} per user/month</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => isSelected ? handleRemove(featureName) : handleAdd(featureName)}
+                      className={`h-9 w-9 flex justify-center items-center rounded-[8px] flex-shrink-0 ${
+                        isSelected 
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      }`}
+                      aria-label={isSelected ? `Remove ${featureName}` : `Add ${featureName}`}
+                    >
+                      {isSelected ? <X size={18} /> : <Plus size={18} />}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </section>
 
@@ -278,23 +349,96 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
                   <ul className="grid items-center grid-cols-2 gap-y-4">
                     {selected.map((feature, idx) => {
                       const featureObj = project?.features?.find(f => f.name === feature);
+                      const isUsageBased = featureObj?.featureType === "Usage Based";
+                      const isLimits = featureObj?.featureType === "Limits";
+                      const countableData = featureObj?.countableData;
+                      const needsInput = (isUsageBased || isLimits) && countableData;
+                      
                       return (
-                        <li key={idx} className="flex justify-between items-center bg-gray-50 border rounded-[10px] px-3 py-2 h-[64px] w-[355px]">
-                          <div className="flex flex-col">
-                            <span className="font-medium">{feature}</span>
-                            {featureObj && (
-                              <span className="text-xs text-gray-500">
-                                {formatPrice(featureObj.basePrice, project?.currency || 'USD')} per user/month
-                              </span>
-                            )}
+                        <li key={idx} className={`flex flex-col bg-gray-50 border rounded-[10px] px-3 py-2 ${needsInput ? 'gap-2' : ''} w-[355px]`}>
+                          <div className="flex justify-between items-start">
+                            <div className="flex flex-col flex-1 gap-2 min-w-0">
+                              <span className="font-medium text-sm">{feature}</span>
+                              {featureObj && (
+                                <div className="space-y-1">
+                                  {isUsageBased || isLimits ? (
+                                    countableData ? (
+                                      <>
+                                        <div className="flex items-baseline gap-1">
+                                          <span className="text-xs font-semibold text-gray-900">
+                                            {formatPrice(countableData.countPrice, project?.currency || 'USD')}
+                                          </span>
+                                          <span className="text-[10px] text-gray-500">
+                                            /{countableData.condition}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <div className="flex-1 relative">
+                                            <input
+                                              type="text"
+                                              inputMode="decimal"
+                                              value={featureUsageAmounts[feature] !== undefined 
+                                                ? (featureUsageAmounts[feature] === 0 ? '' : String(featureUsageAmounts[feature])) 
+                                                : (isLimits ? String(countableData.usageCount) : '')}
+                                              onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                                  handleUsageAmountChange(feature, parseFloat(value) || 0);
+                                                }
+                                              }}
+                                              placeholder={isLimits ? String(countableData.usageCount) : "0"}
+                                              className="w-full px-2 py-1 pr-12 text-xs border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
+                                            />
+                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none">
+                                              {countableData.condition}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        {(() => {
+                                          const usageAmount = featureUsageAmounts[feature] !== undefined 
+                                            ? featureUsageAmounts[feature] 
+                                            : (isLimits ? (countableData?.usageCount ?? 0) : 0);
+                                          const countPrice = countableData?.countPrice ?? 0;
+                                          const calculatedPrice = usageAmount > 0 && countPrice > 0
+                                            ? (countPrice * usageAmount) * userCount 
+                                            : 0;
+                                          
+                                          return calculatedPrice > 0 ? (
+                                            <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+                                              <span className="text-[9px] text-gray-500">Monthly</span>
+                                              <span className="text-xs font-semibold text-emerald-600">
+                                                {formatPrice(calculatedPrice, project?.currency || 'USD')}
+                                              </span>
+                                            </div>
+                                          ) : null;
+                                        })()}
+                                      </>
+                                    ) : (
+                                      <span className="text-xs text-gray-500">
+                                        {formatPrice(featureObj.basePrice, project?.currency || 'USD')}
+                                      </span>
+                                    )
+                                  ) : (
+                                    <div className="flex items-baseline gap-1">
+                                      <span className="text-xs font-semibold text-gray-900">
+                                        {formatPrice(featureObj.basePrice, project?.currency || 'USD')}
+                                      </span>
+                                      <span className="text-[10px] text-gray-500">
+                                        /user/month
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleRemove(feature)}
+                              className="w-9 h-9 flex justify-center items-center rounded-[8px] shadow-md text-black hover:text-gray-700 border focus:outline-none flex-shrink-0"
+                              aria-label={`Remove ${feature}`}
+                            >
+                              <X size={18} />
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleRemove(feature)}
-                            className="w-9 h-9 flex justify-center items-center rounded-[8px] shadow-md text-black hover:text-gray-700 border focus:outline-none"
-                            aria-label={`Remove ${feature}`}
-                          >
-                            <X size={18} />
-                          </button>
                         </li>
                       );
                     })}
@@ -306,12 +450,12 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
                         <span>Monthly price ({userCount} users):</span>
                         <span>{formatPrice(
                           (() => {
-                            if (subscriptionDuration === "month") return calculateTotalPrice();
+                            if (subscriptionDuration === "month") return calculateBaseMonthlyPrice();
                             const months = subscriptionDuration === "3months" ? 3 : subscriptionDuration === "6months" ? 6 : subscriptionDuration === "9months" ? 9 : 12;
-                            return calculateTotalPrice() / months;
+                            return calculateBaseMonthlyPrice();
                           })(),
                           project?.currency || 'USD'
-                        )}</span>
+                        )}/month</span>
                       </div>
                       {(subscriptionDuration === "3months" || subscriptionDuration === "6months" || subscriptionDuration === "9months") && (
                         <div className="flex justify-between text-gray-600">

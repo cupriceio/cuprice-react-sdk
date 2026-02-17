@@ -8,6 +8,6 @@ export type {
   ThemeSettings,
 } from './types';
 export type { CupricePricingProps } from './components/CupricePricing';
-export { getCurrencySymbol, formatPrice } from './utils';
+export { getCurrencySymbol, formatPrice, normalizeHex, normalizeColor, hexToRgba, getColorWithOpacity } from './utils';
 import './styles.css';
 

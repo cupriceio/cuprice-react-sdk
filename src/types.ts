@@ -8,6 +8,15 @@ export interface Feature {
   basePrice: number;
   projectId: number;
   createdAt?: string;
+  countableData?: {
+    id: number;
+    featureId: number;
+    usageCount: number;
+    condition: string;
+    countPrice: number;
+    eventAggregationMethod?: string | null;
+    createdAt?: string;
+  } | null;
 }
 
 export interface PlanFeature {
@@ -40,13 +49,31 @@ export interface SharedPlan {
 export interface ThemeSettings {
   fontFamily?: string | null;
   primaryColor?: string | null;
+  hoverColor?: string | null;
   buttonTextColor?: string | null;
   customPlanButtonColor?: string | null;
   customPlanButtonTextColor?: string | null;
   popularBadgeBorderColor?: string | null;
   popularBadgeColor?: string | null;
   popularBadgeTextColor?: string | null;
+  borderRadius?: string | null;
+  pricingBackgroundColor?: string | null;
+  pricingBorderColor?: string | null;
+  pricingDescriptionColor?: string | null;
+  pricingHeaderBackgroundColor?: string | null;
+  pricingHeaderTextColor?: string | null;
+  pricingPriceColor?: string | null;
+  pricingTextColor?: string | null;
   fontColor?: string | null;
+  customPlanCardButtonColor?: string | null;
+  customPlanCardButtonTextColor?: string | null;
+  customPlanCardBackgroundColor?: string | null;
+  customPlanCardFontFamily?: string | null;
+  customPlanCardBorderColor?: string | null;
+  customPlanCardBorderWidth?: string | null;
+  customCSS?: string | null;
+  showPricingHeader?: boolean | null;
+  showProjectName?: boolean | null;
 }
 
 export interface SharedProject {

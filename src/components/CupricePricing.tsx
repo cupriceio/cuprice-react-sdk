@@ -194,7 +194,7 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
 
   const resolvedPricingDescriptionColor = normalizeColor(
     themePricingDescriptionColorSetting ?? null,
-    "#0A0A0A" // Default dark gray for description
+    "#556987" // Default gray for description (matches dashboard)
   );
 
   const resolvedPricingPriceColor = normalizeColor(

@@ -97,11 +97,3 @@ export interface SharedProject {
   pricingPlans: SharedPlan[];
 }
 
-export interface CupricePricingProps {
-  shareId: string;
-  apiUrl?: string;
-  onPlanSelect?: (plan: SharedPlan) => void;
-  onCustomPlanClick?: () => void;
-  className?: string;
-}
-

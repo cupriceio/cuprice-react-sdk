@@ -40,14 +40,10 @@ const PricingCard: React.FC<PricingCardProps> = ({
   const badgeRef = useRef<HTMLDivElement>(null);
   const prevPriceRef = useRef<string>(price);
   const prevPeriodRef = useRef<string>(period);
-  const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('down');
   
-  // Track price/period changes to determine scroll direction
+  // Track price/period changes for animations
   useEffect(() => {
     if (prevPriceRef.current !== price || prevPeriodRef.current !== period) {
-      const prevPriceNum = parseFloat(prevPriceRef.current) || 0;
-      const currentPriceNum = parseFloat(price) || 0;
-      setScrollDirection(currentPriceNum > prevPriceNum ? 'up' : 'down');
       prevPriceRef.current = price;
       prevPeriodRef.current = period;
     }

@@ -7,7 +7,12 @@ interface CustomPlanModalProps {
   isOpen: boolean;
   onClose: () => void;
   project?: SharedProject;
-  onSubscribe?: (selectedFeatures: string[], userCount: number, duration: string, featureUsageAmounts?: Record<string, number>) => void;
+  onSubscribe?: (
+    selectedFeatures: string[],
+    userCount: number,
+    duration: string,
+    featureUsageAmounts?: Record<string, number>
+  ) => void | Promise<void>;
 }
 
 function getFocusable(container: HTMLElement | null): HTMLElement[] {
@@ -39,6 +44,7 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
   const [summaryCategory, setSummaryCategory] = useState<"Countable" | "Standard" | "AI">("Countable");
   const [userCount, setUserCount] = useState<number>(1);
   const [subscriptionDuration, setSubscriptionDuration] = useState<"month" | "3months" | "6months" | "9months" | "12months">("month");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [mounted, setMounted] = useState(isOpen);
   const [visible, setVisible] = useState(isOpen);
@@ -53,6 +59,19 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
       return () => clearTimeout(t);
     }
   }, [isOpen]);
+
+  // Reset state when modal fully closes
+  useEffect(() => {
+    if (isOpen) return;
+    if (mounted) return;
+    setSelected([]);
+    setFeatureUsageAmounts({});
+    setFeatureCategory("Countable");
+    setSummaryCategory("Countable");
+    setUserCount(1);
+    setSubscriptionDuration("month");
+    setIsSubmitting(false);
+  }, [isOpen, mounted]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -234,9 +253,17 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
   const canSubscribe = selected.length > 0;
 
   const handleSubscribe = () => {
-    if (canSubscribe && onSubscribe) {
-      onSubscribe(selected, userCount, subscriptionDuration, featureUsageAmounts);
-    }
+    if (!canSubscribe || !onSubscribe || isSubmitting) return;
+    setIsSubmitting(true);
+    Promise.resolve(onSubscribe(selected, userCount, subscriptionDuration, featureUsageAmounts))
+      .then(() => {
+        onClose();
+      })
+      .catch((err) => {
+        // SDK: avoid hard dependency on any toast library
+        console.error('CustomPlanModal subscribe failed:', err);
+        setIsSubmitting(false);
+      });
   };
 
   if (!mounted) return null;
@@ -575,26 +602,26 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
                 <button
                   onClick={handleSubscribe}
                   className={`w-full text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 transition-colors flex items-center justify-center gap-2 ${
-                    canSubscribe ? '' : 'opacity-50 cursor-not-allowed'
+                    canSubscribe && !isSubmitting ? '' : 'opacity-50 cursor-not-allowed'
                   }`}
                   style={{
                     background: project?.themeSettings?.customPlanButtonColor || project?.themeSettings?.customPlanCardButtonColor || '#298558',
                     color: project?.themeSettings?.customPlanButtonTextColor || '#FAFAFA',
                   }}
                   onMouseEnter={(e) => {
-                    if (canSubscribe) {
+                    if (canSubscribe && !isSubmitting) {
                       e.currentTarget.style.background = project?.themeSettings?.hoverColor || '#3E9D70';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (canSubscribe) {
+                    if (canSubscribe && !isSubmitting) {
                       e.currentTarget.style.background = project?.themeSettings?.customPlanButtonColor || project?.themeSettings?.customPlanCardButtonColor || '#298558';
                     }
                   }}
-                  disabled={!canSubscribe}
+                  disabled={!canSubscribe || isSubmitting}
                 >
                   <Stamp size={18} />
-                  <span>Subscribe now</span>
+                  <span>{isSubmitting ? 'Processing...' : 'Subscribe now'}</span>
                 </button>
                 <button
                   onClick={onClose}

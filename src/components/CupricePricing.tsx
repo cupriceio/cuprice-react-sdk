@@ -298,8 +298,8 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
   const annualDiscountPercentage = Math.round(project.annualDiscount * 100);
   const currencySymbol = getCurrencySymbol(project.currency);
 
-  const visiblePlans = project.pricingPlans
-    .filter(plan => plan.isVisible)
+  const visiblePlans = (project.pricingPlans || [])
+    .filter(plan => plan.isVisible !== false)
     .sort((a, b) => a.order - b.order);
 
   const handleCustomPlanClick = () => {
@@ -396,7 +396,7 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
     : '';
 
   return (
-    <div className="flex flex-col min-h-screen h-full overflow-hidden cuprice-pricing-container cuprice-pricing-container">
+    <div className="flex flex-col min-h-screen h-full overflow-x-hidden cuprice-pricing-container cuprice-pricing-container">
       {scopedCSS && (
         <style dangerouslySetInnerHTML={{ __html: scopedCSS }} />
       )}
@@ -412,14 +412,14 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
         const showPricingHeader = themeSettings.showPricingHeader === false ? false : true;
         return showProjectName || showPricingHeader;
       })() && (
-      <div className="flex flex-col gap-5 pr-[5px] items-start">
+      <div className="flex flex-col gap-3 pr-[5px] items-start">
         {(() => {
           const themeSettings = project.themeSettings;
           if (!themeSettings) return true;
           return themeSettings.showProjectName !== false;
         })() && (
         <h1 
-          className="text-4xl md:text-5xl font-bold"
+          className="text-2xl md:text-3xl font-bold"
           style={{ 
             background: 'var(--pricing-header-text-color, #0A0A0A)',
             WebkitBackgroundClip: 'text',
@@ -436,7 +436,7 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
           return themeSettings.showPricingHeader !== false;
         })() && (
         <p
-          className="text-2xl font-medium max-w-3xl leading-[100%]"
+          className="text-base font-medium max-w-3xl leading-tight"
           style={{ 
             fontFamily: fontStack,
             background: 'var(--pricing-description-color, #556987)',
@@ -452,10 +452,10 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
       )}
 
       {visiblePlans.length > 0 && (
-        <div className="flex justify-center w-full mb-[44px] mt-[60px]">
+        <div className="flex justify-center w-full mb-[24px] mt-[32px] px-4">
           {project.annualDiscountEnabled ? (
             <div 
-              className="relative rounded-lg p-[3px] w-[400px] h-[36px] flex"
+              className="relative rounded-lg p-[3px] h-[36px] flex w-full max-w-[350px] min-w-[320px] overflow-hidden"
               style={{
                 borderRadius: "var(--pricing-border-radius, 10px)",
                 background: "var(--base-primary, #298558)",
@@ -463,47 +463,46 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
               }}
             >
               <div 
-                className={`absolute top-[3px] w-[197px] h-[30px] bg-white rounded-md transition-transform duration-300 ease-in-out ${
-                  effectiveIsAnnual ? 'translate-x-[197px]' : 'translate-x-0'
-                }`}
+                className="absolute top-[3px] h-[30px] bg-white rounded-md transition-all duration-300 ease-in-out"
                 style={{
                   borderRadius: "var(--pricing-border-radius, 10px)",
+                  width: 'calc(50% - 3px)',
+                  left: effectiveIsAnnual ? '50%' : '3px',
                 }}
               />
-              
               <button
                 onClick={() => setIsAnnual(false)}
-                className={`relative z-10 w-[197px] h-[30px] px-2 py-1 text-sm font-medium rounded-md transition-colors duration-300 flex items-center justify-center ${
-                  !effectiveIsAnnual
-                    ? "text-gray-900"
-                    : "text-white hover:text-gray-300"
-                }`}
+                className="relative z-10 h-[30px] flex-1 transition-colors duration-300 flex items-center justify-center px-2 sm:px-4 py-1 whitespace-nowrap"
                 style={{
                   borderRadius: "var(--pricing-border-radius, 10px)",
                   fontFamily: fontStack,
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  backgroundColor: 'transparent',
+                  color: !effectiveIsAnnual ? '#000000' : 'var(--pricing-button-text, #FAFAFA)',
                 }}
               >
                 Monthly
               </button>
               <button
                 onClick={() => setIsAnnual(true)}
-                className={`relative z-10 flex items-center justify-center gap-2 w-[197px] h-[30px] px-2 py-1 text-sm font-medium rounded-md transition-colors duration-300 ${
-                  effectiveIsAnnual
-                    ? "text-gray-900"
-                    : "text-white hover:text-gray-300"
-                }`}
+                className="relative z-10 h-[30px] flex-1 flex items-center justify-center gap-2 px-2 sm:px-4 py-1 transition-colors duration-300 whitespace-nowrap"
                 style={{
                   borderRadius: "var(--pricing-border-radius, 10px)",
                   fontFamily: fontStack,
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  backgroundColor: 'transparent',
+                  color: effectiveIsAnnual ? '#000000' : 'var(--pricing-button-text, #FAFAFA)',
                 }}
               >
                 <TicketPercent size={16} />
-                Annual (SAVE {annualDiscountPercentage}%)
+                <span className="text-xs sm:text-sm">Annual (SAVE {annualDiscountPercentage}%)</span>
               </button>
             </div>
           ) : (
             <div 
-              className="relative rounded-lg p-[3px] w-[200px] h-[36px] flex"
+              className="relative rounded-lg p-[3px] h-[36px] flex w-full max-w-[200px]"
               style={{
                 borderRadius: "var(--pricing-border-radius, 10px)",
                 background: "var(--base-primary, #298558)",
@@ -525,11 +524,12 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
       )}
 
       {visiblePlans.length > 0 ? (
-        <div className={`flex gap-6 items-center ${
-          visiblePlans.length >= 4 
-            ? "flex-row overflow-x-auto pb-4 px-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" 
-            : "flex-col md:flex-row justify-center"
-        }`}>
+        <div className="flex justify-center w-full pb-6">
+          <div className={`gap-4 sm:gap-6 overflow-visible ${
+            visiblePlans.length >= 3 
+              ? "grid grid-cols-1 sm:grid-cols-2 xl:flex xl:flex-row xl:flex-nowrap xl:justify-center xl:overflow-x-auto xl:scrollbar-thin xl:scrollbar-thumb-gray-300 xl:scrollbar-track-gray-100 xl:pt-4 xl:pb-4 w-full px-2 sm:px-4 items-stretch"
+              : "flex flex-col md:flex-row justify-center items-center w-max max-w-full mx-auto"
+          }`}>
           {visiblePlans.map((plan) => {
             const totalFeaturePrice = plan.planFeatures.reduce((sum, pf) => {
               return sum + (pf.feature.basePrice || 0);
@@ -545,7 +545,10 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
             }));
 
             return (
-              <div key={plan.id} className={visiblePlans.length >= 4 ? "min-w-[280px] flex-shrink-0" : ""}>
+              <div
+                key={plan.id}
+                className={`${visiblePlans.length >= 3 ? 'w-full xl:min-w-[295px] xl:w-auto xl:flex-shrink-0 pt-3' : 'pt-3'}`}
+              >
                 <PricingCard
                   title={plan.name}
                   price={plan.isFree ? "0" : (effectiveIsAnnual ? annualPrice.toFixed(2) : monthlyPrice.toFixed(2))}
@@ -564,12 +567,12 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
               </div>
             );
           })}
-          <div className={`${visiblePlans.length >= 4 ? "min-w-[295px] flex-shrink-0" : "w-[295px]"} h-[414px] border-2 rounded-2xl p-2 flex flex-col justify-between shadow-lg`} style={{
+          <div className={`${visiblePlans.length >= 3 ? "w-full xl:min-w-[295px] xl:w-auto xl:flex-shrink-0 pt-3 mt-1" : "w-[295px] pt-3 mt-1"} min-h-[414px] border-2 rounded-2xl p-2 flex flex-col justify-between shadow-lg`} style={{
             borderRadius: "var(--pricing-border-radius, 10px)",
             backgroundColor: project.themeSettings?.customPlanCardBackgroundColor || undefined,
             backgroundImage: project.themeSettings?.customPlanCardBackgroundColor 
               ? `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E")`
-              : "linear-gradient(0deg, rgba(0, 0, 0, 0.41) 0%, rgba(0, 0, 0, 0.41) 100%), url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIwLjkiIG51bU9jdGF2ZXM9IjQiIHJlc3VsdD0ibm9pc2UiLz48ZmVDb2xvck1hdHJpeCB0eXBlPSJzYXR1cmF0ZSIgdmFsdWVzPSIwIi8+PC9maWx0ZXI+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNub2lzZSkiIG9wYWNpdHk9IjAuNCIvPjwvc3ZnPg==') center / cover no-repeat",
+              : "linear-gradient(0deg, rgba(0, 0, 0, 0.41) 0%, rgba(0, 0, 0, 0.41) 100%), url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSBiYXNlRnJlcXVlbmN5PSIwLjkiIG51bU9jdGF2ZXM9IjQiIHJlc3VsdD0ibm9pc2UiLz48ZmVDb2xvck1hdHJpeCB0eXBlPSJzYXR1cmF0ZSIgdmFsdWVzPSIwIi8+PC9maWx0ZXI+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNub2lzZSkiIG9wYWNpdHk9IjAuNCIvPjwvc3ZnPg==')",
             backgroundSize: project.themeSettings?.customPlanCardBackgroundColor ? "200px 200px" : "cover",
             backgroundPosition: "center",
             backgroundRepeat: "repeat",
@@ -579,13 +582,8 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
             borderStyle: "solid",
             borderColor: project.themeSettings?.customPlanCardBorderColor || "#FFFFFF",
           }}>
-            <div className="border-2 p-3 rounded-2xl h-full flex flex-col justify-between" style={{
+            <div className="p-3 flex-1 flex flex-col justify-between min-h-0" style={{
               borderRadius: "var(--pricing-border-radius, 10px)",
-              borderWidth: project.themeSettings?.customPlanCardBorderWidth 
-                ? `${project.themeSettings.customPlanCardBorderWidth}px`
-                : "2px",
-              borderStyle: "solid",
-              borderColor: project.themeSettings?.customPlanCardBorderColor || "#FFFFFF",
             }}>
               <div className="flex justify-between items-center">
                 <h2
@@ -617,7 +615,7 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
                   <span style={{ color: 'var(--base-foreground, #0A0A0A)' }}>Special</span>
                 </div>
               </div>
-              <div className="mt-5 space-y-4 text-white w-[212px] h-[165px] flex flex-col items-center justify-center bg-transparent mx-[30px]">
+              <div className="mt-5 space-y-4 text-white w-[212px] flex flex-col items-center justify-center bg-transparent mx-auto flex-1 min-h-0">
                 <p
                   className="text-[17px] font-normal text-white leading-[110%]"
                   style={{ 
@@ -706,6 +704,7 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
                 Create now
               </button>
             </div>
+          </div>
           </div>
         </div>
       ) : (

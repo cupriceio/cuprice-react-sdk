@@ -35,15 +35,27 @@ To watch for changes during development:
 npm run dev
 ```
 
-## Publishing
+## Publishing to npm
 
-Before publishing to npm:
+1. **Log in to npm** (if needed):
+   ```bash
+   npm login
+   ```
+   Use your npm account with permission to publish under the `@cuprice` scope.
 
-1. Update the version in `package.json`
-2. Update `CHANGELOG.md`
-3. Build the project: `npm run build`
-4. Test the build locally
-5. Publish: `npm publish --access public` (for scoped packages)
+2. **Bump version** in `package.json` (e.g. `1.2.0` → `1.3.0` for changes).
+
+3. **Build**:
+   ```bash
+   npm run build
+   ```
+
+4. **Publish** (scoped package requires `--access public`):
+   ```bash
+   npm publish --access public
+   ```
+
+5. Consumers install with: `npm install @cuprice/react-sdk`
 
 ## Project Structure
 

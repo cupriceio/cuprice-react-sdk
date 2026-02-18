@@ -1,4 +1,8 @@
-/* Cuprice React SDK Styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Cuprice React SDK – custom styles */
 
 .cuprice-pricing-card {
   box-sizing: border-box;
@@ -30,4 +34,3 @@
 .scrollbar-thin::-webkit-scrollbar-track {
   background-color: #f3f4f6;
 }
-

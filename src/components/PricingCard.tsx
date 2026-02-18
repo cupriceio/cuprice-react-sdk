@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Feature {
   name: string;
@@ -40,10 +41,16 @@ const PricingCard: React.FC<PricingCardProps> = ({
   const badgeRef = useRef<HTMLDivElement>(null);
   const prevPriceRef = useRef<string>(price);
   const prevPeriodRef = useRef<string>(period);
+  const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('down');
   
-  // Track price/period changes for animations
+  // Track price/period changes to determine scroll direction for animations
+  // When price increases (monthly → annual), new price comes from below (scroll up)
+  // When price decreases (annual → monthly), new price comes from above (scroll down)
   useEffect(() => {
     if (prevPriceRef.current !== price || prevPeriodRef.current !== period) {
+      const prevPriceNum = parseFloat(prevPriceRef.current) || 0;
+      const currentPriceNum = parseFloat(price) || 0;
+      setScrollDirection(currentPriceNum > prevPriceNum ? 'up' : 'down');
       prevPriceRef.current = price;
       prevPeriodRef.current = period;
     }
@@ -161,7 +168,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
   if (isBorderGradient) {
     return (
       <div
-        className={`cuprice-pricing-card ${isPopular ? "cuprice-pricing-card--popular" : ""} shadow-lg w-[295px] h-full relative ${
+        className={`cuprice-pricing-card ${isPopular ? "cuprice-pricing-card--popular" : ""} shadow-lg w-full h-full relative ${
           isPopular ? "ring-2" : ""
         }`}
         style={{
@@ -203,17 +210,19 @@ const PricingCard: React.FC<PricingCardProps> = ({
               {freemiumDay && freemiumDay > 0 ? (
                 <div className="flex flex-col">
                   <div className="mb-1 relative overflow-hidden" style={{ height: '28px' }}>
-                    <div
-                      key={`${price}-${period}`}
-                      className="absolute inset-0 transition-all duration-300 ease-in-out"
-                      style={{
-                        transform: 'translateY(0)',
-                        opacity: 1,
-                      }}
-                    >
-                      <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{currencySymbol}0</span>
-                      <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
-                    </div>
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={`${price}-${period}`}
+                        initial={{ y: scrollDirection === 'down' ? -28 : 28, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: scrollDirection === 'down' ? 28 : -28, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="absolute inset-0"
+                      >
+                        <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{currencySymbol}0</span>
+                        <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
+                      </motion.div>
+                    </AnimatePresence>
                   </div>
                   <div className="text-sm font-normal" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', background: 'var(--pricing-description-color, var(--pricing-text-color, var(--base-foreground, #0A0A0A)))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
                     Get {freemiumDay} {freemiumDay === 1 ? 'day' : 'days'} free access to all premium features
@@ -221,33 +230,37 @@ const PricingCard: React.FC<PricingCardProps> = ({
                 </div>
               ) : isFree ? (
                 <div className="mb-2 relative overflow-hidden" style={{ height: '28px' }}>
-                  <div
-                    key={`${price}-${period}`}
-                    className="absolute inset-0 transition-all duration-300 ease-in-out"
-                    style={{
-                      transform: 'translateY(0)',
-                      opacity: 1,
-                    }}
-                  >
-                    <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{currencySymbol}0</span>
-                    <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
-                  </div>
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={`${price}-${period}`}
+                      initial={{ y: scrollDirection === 'up' ? 28 : -28, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: scrollDirection === 'up' ? -28 : 28, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="absolute inset-0"
+                    >
+                      <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{currencySymbol}0</span>
+                      <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
               ) : (
                 <div className="mb-2 relative overflow-hidden" style={{ height: '28px' }}>
-                  <div
-                    key={`${price}-${period}`}
-                    className="absolute inset-0 transition-all duration-300 ease-in-out"
-                    style={{
-                      transform: 'translateY(0)',
-                      opacity: 1,
-                    }}
-                  >
-                    <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
-                      {currencySymbol}{price}
-                    </span>
-                    <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
-                  </div>
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={`${price}-${period}`}
+                      initial={{ y: scrollDirection === 'up' ? 28 : -28, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: scrollDirection === 'up' ? -28 : 28, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="absolute inset-0"
+                    >
+                      <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+                        {currencySymbol}{price}
+                      </span>
+                      <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
               )}
             </div>
@@ -297,7 +310,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
             <button
               onClick={onButtonClick}
               disabled={isLoading}
-              className="w-[253px] h-[36px] px-4 py-2 font-medium text-sm transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full h-[36px] px-4 py-2 font-medium text-sm transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
               style={{
                 fontFamily:
                   'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -336,7 +349,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
   // For solid border colors, use normal border
   return (
     <div
-      className={`cuprice-pricing-card ${isPopular ? "cuprice-pricing-card--popular" : ""} shadow-lg flex flex-col p-5 w-[295px] h-[414px] gap-4 relative ${
+      className={`cuprice-pricing-card ${isPopular ? "cuprice-pricing-card--popular" : ""} shadow-lg flex flex-col p-5 w-full h-[414px] gap-4 relative ${
         isPopular ? "ring-2" : ""
       }`}
       style={{
@@ -373,17 +386,19 @@ const PricingCard: React.FC<PricingCardProps> = ({
           {freemiumDay && freemiumDay > 0 ? (
             <div className="flex flex-col">
               <div className="mb-1 relative overflow-hidden" style={{ height: '28px' }}>
-                <div
-                  key={`${price}-${period}`}
-                  className="absolute inset-0 transition-all duration-300 ease-in-out"
-                  style={{
-                    transform: 'translateY(0)',
-                    opacity: 1,
-                  }}
-                >
-                  <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{currencySymbol}0</span>
-                  <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
-                </div>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={`${price}-${period}`}
+                    initial={{ y: scrollDirection === 'down' ? -28 : 28, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: scrollDirection === 'down' ? 28 : -28, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="absolute inset-0"
+                  >
+                    <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{currencySymbol}0</span>
+                    <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
+                  </motion.div>
+                </AnimatePresence>
               </div>
               <div className="text-sm font-normal" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', background: 'var(--pricing-description-color, var(--pricing-text-color, var(--base-foreground, #0A0A0A)))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
                 Get {freemiumDay} {freemiumDay === 1 ? 'day' : 'days'} free access to all premium features
@@ -391,33 +406,37 @@ const PricingCard: React.FC<PricingCardProps> = ({
             </div>
           ) : isFree ? (
             <div className="mb-2 relative overflow-hidden" style={{ height: '28px' }}>
-              <div
-                key={`${price}-${period}`}
-                className="absolute inset-0 transition-all duration-300 ease-in-out"
-                style={{
-                  transform: 'translateY(0)',
-                  opacity: 1,
-                }}
-              >
-                <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{currencySymbol}0</span>
-                <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
-              </div>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`${price}-${period}`}
+                  initial={{ y: scrollDirection === 'up' ? 28 : -28, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: scrollDirection === 'up' ? -28 : 28, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  className="absolute inset-0"
+                >
+                  <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{currencySymbol}0</span>
+                  <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
+                </motion.div>
+              </AnimatePresence>
             </div>
           ) : (
             <div className="mb-2 relative overflow-hidden" style={{ height: '28px' }}>
-              <div
-                key={`${price}-${period}`}
-                className="absolute inset-0 transition-all duration-300 ease-in-out"
-                style={{
-                  transform: 'translateY(0)',
-                  opacity: 1,
-                }}
-              >
-                <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
-                  {currencySymbol}{price}
-                </span>
-                <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
-              </div>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`${price}-${period}`}
+                  initial={{ y: scrollDirection === 'up' ? 28 : -28, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: scrollDirection === 'up' ? -28 : 28, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  className="absolute inset-0"
+                >
+                  <span className="text-2xl font-bold" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+                    {currencySymbol}{price}
+                  </span>
+                  <span className="text-2xl font-normal ml-1" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: '100%', background: 'var(--pricing-price-color, #0A0A0A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>| {period === 'mth' ? 'Month' : 'Year'}</span>
+                </motion.div>
+              </AnimatePresence>
             </div>
           )}
         </div>
@@ -467,7 +486,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
         <button
           onClick={onButtonClick}
           disabled={isLoading}
-          className="cuprice-pricing-button w-[253px] h-[36px] px-4 py-2 font-medium text-sm transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+          className="cuprice-pricing-button w-full h-[36px] px-4 py-2 font-medium text-sm transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
           style={{
             fontFamily:
               'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',

@@ -1,6 +1,6 @@
 {
   "name": "@cuprice/react-sdk",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "description": "React SDK for embedding Cuprice pricing tables in your application",
   "main": "dist/index.js",

@@ -547,7 +547,7 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
             return (
               <div
                 key={plan.id}
-                className={`${visiblePlans.length >= 3 ? 'w-full xl:min-w-[295px] xl:w-auto xl:flex-shrink-0 pt-3' : 'pt-3'}`}
+                className={`${visiblePlans.length >= 3 ? 'w-full xl:w-[295px] xl:min-w-[295px] xl:max-w-[295px] xl:flex-shrink-0 pt-3' : 'pt-3'}`}
               >
                 <PricingCard
                   title={plan.name}
@@ -567,7 +567,7 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
               </div>
             );
           })}
-          <div className={`${visiblePlans.length >= 3 ? "w-full xl:min-w-[295px] xl:w-auto xl:flex-shrink-0 pt-3 mt-1" : "w-[295px] pt-3 mt-1"} min-h-[414px] border-2 rounded-2xl p-2 flex flex-col justify-between shadow-lg`} style={{
+          <div className={`${visiblePlans.length >= 3 ? "w-full xl:w-[295px] xl:min-w-[295px] xl:max-w-[295px] xl:flex-shrink-0 pt-3 mt-1" : "w-[295px] pt-3 mt-1"} min-h-[414px] border-2 rounded-2xl p-2 flex flex-col justify-between shadow-lg`} style={{
             borderRadius: "var(--pricing-border-radius, 10px)",
             backgroundColor: project.themeSettings?.customPlanCardBackgroundColor || undefined,
             backgroundImage: project.themeSettings?.customPlanCardBackgroundColor 

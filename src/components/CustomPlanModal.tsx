@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Plus, X, User, Calendar } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Plus, Stamp, X, User, Calendar } from 'lucide-react';
 import type { SharedProject } from '../types';
 import { formatPrice } from '../utils';
 
@@ -25,7 +25,7 @@ function getFocusable(container: HTMLElement | null): HTMLElement[] {
   ).filter((el) => !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden'));
 }
 
-const CustomPlanModal: React.FC<CustomPlanModalProps> = ({ 
+const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
   isOpen, 
   onClose, 
   project,
@@ -189,24 +189,22 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
     return monthlyPrice * months * (1 - discount);
   };
 
-  if (!mounted) return null;
-
   const renderCategoryTabs = (
     activeCategory: "Countable" | "Standard" | "AI",
     onSelect: (category: "Countable" | "Standard" | "AI") => void,
     extraClasses = ""
   ) => (
     <div
-      className={`relative flex items-center gap-2 rounded-lg p-[3px] ${extraClasses}`}
-      style={{ width: "194px", height: "36px", backgroundColor: "#FBFAF9" }}
+      className={`relative flex items-center gap-1 rounded-lg p-[3px] ${extraClasses}`}
+      style={{ height: "32px", backgroundColor: "#FBFAF9", width: "fit-content" }}
     >
       <div
-        className={`absolute top-[3px] left-[3px] w-[84px] h-[28px] bg-white rounded-md transition-transform duration-300 ease-in-out border border-t-white ${
+        className={`absolute top-[3px] h-[26px] bg-white rounded-md transition-all duration-300 ease-in-out border border-t-white ${
           activeCategory === "Countable"
-            ? "translate-x-0"
+            ? "left-[3px] w-[70px]"
             : activeCategory === "Standard"
-            ? "translate-x-[92px]"
-            : "translate-x-[184px]"
+            ? "left-[76px] w-[65px]"
+            : "left-[144px] w-[50px]"
         }`}
         style={{
           boxShadow: "0px 1px 2px 0px rgba(0, 0, 0, 0.05), 0px 1px 3px 0px rgba(0, 0, 0, 0.1)",
@@ -217,13 +215,14 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
           key={name}
           type="button"
           onClick={() => onSelect(name)}
-          className={`relative z-10 rounded-md text-sm font-medium font-sans text-center transition-colors duration-300 py-1 px-2 flex items-center justify-center flex-shrink-0 ${
+          className={`relative z-10 rounded-md text-xs font-medium font-sans text-center transition-colors duration-300 py-1 px-2 flex items-center justify-center flex-shrink-0 ${
             activeCategory === name ? "text-[#0A0A0A]" : "text-black"
-          } w-[84px] h-[28px]`}
+          }`}
           style={{
-            minWidth: "84px",
+            width: name === "Countable" ? "70px" : name === "Standard" ? "65px" : "50px",
+            height: "26px",
             letterSpacing: "0%",
-            lineHeight: "1.25rem",
+            lineHeight: "1rem",
           }}
         >
           {name}
@@ -239,6 +238,8 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
       onSubscribe(selected, userCount, subscriptionDuration, featureUsageAmounts);
     }
   };
+
+  if (!mounted) return null;
 
   return (
     <div
@@ -256,19 +257,19 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
           visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 sm:translate-y-0 sm:scale-95'
         }`}
       >
-        <div className="flex flex-1 max-h-[631px] flex-col md:flex-row overflow-hidden rounded-[18px]">
+        <div className="flex flex-1 max-h-[631px] flex-col md:flex-row overflow-hidden rounded-[18px] bg-[#F8FAFC]">
           <section 
-            className="md:w-[295px] border-b md:border-b-0 md:border-r p-4 flex flex-col bg-[#F8FAFC] rounded-[18px]" 
+            className="md:w-[295px] border-b md:border-b-0 md:border-r p-4 flex flex-col bg-[#F8FAFC]"
             aria-labelledby="features-heading"
           >
-            <h3 id="features-heading" className="text-base font-medium mb-1">Features</h3>
-            <p className="text-xs text-gray-500 mb-4">You can choose your relevant features that you will use.</p>
+            <h3 id="features-heading" className="text-base font-medium mb-1">Your Custom Plan</h3>
+            <p className="text-xs text-gray-500 mb-4">You can select your relevant features that you will use.</p>
             
             {renderCategoryTabs(featureCategory, setFeatureCategory, "mb-4")}
 
             <div className="flex justify-between text-xs text-gray-700 mb-2" aria-live="polite">
-              <span>Features</span> 
-              <span>{allFeatures.length}</span>
+              <span>Total features</span>
+              <span>{Array.isArray(allFeatures) ? allFeatures.length : 0}</span>
             </div>
 
             <ul className="space-y-2 overflow-y-auto pr-1" role="list">
@@ -281,9 +282,10 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
                 const countableData = featureObj?.countableData;
                 
                 return (
-                  <li key={idx} className={`flex justify-between items-center bg-white border rounded-md ${isSelected && (isUsageBased || isLimits) && countableData ? 'min-h-[64px]' : 'h-[64px]'} px-3 py-2`}>
-                    <div className="flex flex-col gap-1 flex-1">
-                      <span className="text-sm font-medium">{featureName}</span>
+                  <li key={idx} className="flex flex-col bg-white border rounded-md px-3 py-2 min-h-[64px]">
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col gap-1 flex-1 min-w-0">
+                        <span className="text-sm font-medium truncate">{featureName}</span>
                       {featureObj && (
                         <div className="text-xs text-gray-500">
                           {isUsageBased || isLimits ? (
@@ -299,26 +301,29 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
                           )}
                         </div>
                       )}
+                      </div>
+
+                      <button
+                        onClick={() => isSelected ? handleRemove(featureName) : handleAdd(featureName)}
+                        className={`h-9 w-9 flex justify-center items-center rounded-[8px] flex-shrink-0 ${
+                          isSelected
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            : 'bg-white border border-gray-300 hover:border-emerald-600 text-emerald-600'
+                        }`}
+                        aria-label={isSelected ? `Remove ${featureName}` : `Add ${featureName}`}
+                      >
+                        {isSelected ? <CheckCircle2 size={18} className="text-white" /> : <Plus size={18} />}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => isSelected ? handleRemove(featureName) : handleAdd(featureName)}
-                      className={`h-9 w-9 flex justify-center items-center rounded-[8px] flex-shrink-0 ${
-                        isSelected 
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      }`}
-                      aria-label={isSelected ? `Remove ${featureName}` : `Add ${featureName}`}
-                    >
-                      {isSelected ? <X size={18} /> : <Plus size={18} />}
-                    </button>
                   </li>
                 );
               })}
             </ul>
           </section>
 
-          <section 
-            className="md:w-3/4 p-4 flex flex-col bg-[#F8FAFC] rounded-[18px]" 
+          {/* Middle: Selected plan (dashboard web style) */}
+          <section
+            className="md:w-1/2 md:border-b-0 md:border-r border-b p-4 flex flex-col bg-[#F8FAFC]"
             aria-labelledby="selected-plan-heading"
           >
             <h3
@@ -327,13 +332,14 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
             >
               Your Custom Plan
             </h3>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
               {renderCategoryTabs(summaryCategory, setSummaryCategory)}
-              <div className="flex items-center gap-2 text-gray-500 max-w-[214px]">
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
                 <span>Total Features</span>
-                <span>{allFeatures.length}</span>
+                <span>{Array.isArray(allFeatures) ? allFeatures.length : 0}</span>
               </div>
-              <div className="flex items-center gap-2 text-emerald-600 max-w-[214px]">
+              <div className="flex items-center gap-2 text-emerald-600 text-sm">
                 <span>Added Features</span>
                 <span>{selected.length}</span>
               </div>
@@ -341,44 +347,60 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
 
             <h3 id="selected-plan-heading" className="sr-only">Selected features</h3>
 
-            <div className="flex-1 border rounded-md p-4 mb-4 overflow-y-auto">
+            <div className="flex-1 border rounded-md p-4 overflow-y-auto bg-white">
               {selected.length === 0 ? (
                 <p className="text-gray-400 text-sm">No features added yet</p>
               ) : (
-                <div className="space-y-4">
-                  <ul className="grid items-center grid-cols-2 gap-y-4">
-                    {selected.map((feature, idx) => {
-                      const featureObj = project?.features?.find(f => f.name === feature);
-                      const isUsageBased = featureObj?.featureType === "Usage Based";
-                      const isLimits = featureObj?.featureType === "Limits";
-                      const countableData = featureObj?.countableData;
-                      const needsInput = (isUsageBased || isLimits) && countableData;
-                      
-                      return (
-                        <li key={idx} className={`flex flex-col bg-gray-50 border rounded-[10px] px-3 py-2 ${needsInput ? 'gap-2' : ''} w-[355px]`}>
-                          <div className="flex justify-between items-start">
-                            <div className="flex flex-col flex-1 gap-2 min-w-0">
-                              <span className="font-medium text-sm">{feature}</span>
-                              {featureObj && (
-                                <div className="space-y-1">
-                                  {isUsageBased || isLimits ? (
-                                    countableData ? (
+                <ul className="grid grid-cols-2 xs-320:grid-cols-1 xs-360:grid-cols-1 xs-375:grid-cols-2 gap-2">
+                  {selected.map((feature, idx) => {
+                    const featureObj = project?.features?.find(f => f.name === feature);
+                    const isUsageBased = featureObj?.featureType === "Usage Based";
+                    const isLimits = featureObj?.featureType === "Limits";
+                    const countableData = featureObj?.countableData;
+
+                    const getAggregationLabel = (method: string | null | undefined) => {
+                      if (!method || method === "-") return "";
+                      const labels: Record<string, string> = { sum: "Total usage", max: "Peak usage", avg: "Average usage" };
+                      return labels[method] || method;
+                    };
+
+                    return (
+                      <li key={idx} className="group relative bg-white border border-gray-200 rounded-lg p-2.5 hover:border-emerald-300 transition-all duration-200">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex flex-col flex-1 gap-2 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-medium text-xs text-gray-900 leading-tight">{feature}</h4>
+                              <button
+                                onClick={() => handleRemove(feature)}
+                                className="opacity-0 group-hover:opacity-100 w-5 h-5 flex justify-center items-center rounded text-gray-400 hover:text-red-500 transition-all duration-200 flex-shrink-0"
+                                aria-label={`Remove ${feature}`}
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+
+                            {featureObj && (
+                              <div className="space-y-2">
+                                {(isUsageBased || isLimits) ? (
+                                  <>
+                                    {countableData && (
                                       <>
                                         <div className="flex items-baseline gap-1">
-                                          <span className="text-xs font-semibold text-gray-900">
-                                            {formatPrice(countableData.countPrice, project?.currency || 'USD')}
+                                          <span className="text-sm font-semibold text-gray-900">
+                                            {formatPrice(countableData?.countPrice ?? 0, project?.currency || 'USD')}
                                           </span>
                                           <span className="text-[10px] text-gray-500">
-                                            /{countableData.condition}
+                                            /{countableData?.condition || ''}
                                           </span>
                                         </div>
+
                                         <div className="flex items-center">
                                           <div className="flex-1 relative">
                                             <input
                                               type="text"
                                               inputMode="decimal"
-                                              value={featureUsageAmounts[feature] !== undefined 
-                                                ? (featureUsageAmounts[feature] === 0 ? '' : String(featureUsageAmounts[feature])) 
+                                              value={featureUsageAmounts[feature] !== undefined
+                                                ? (featureUsageAmounts[feature] === 0 ? '' : String(featureUsageAmounts[feature]))
                                                 : (isLimits ? String(countableData.usageCount) : '')}
                                               onChange={(e) => {
                                                 const value = e.target.value;
@@ -387,196 +409,201 @@ const CustomPlanModal: React.FC<CustomPlanModalProps> = ({
                                                 }
                                               }}
                                               placeholder={isLimits ? String(countableData.usageCount) : "0"}
-                                              className="w-full px-2 py-1 pr-12 text-xs border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
+                                              className="w-full px-2 py-1.5 pr-16 text-xs border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
                                             />
                                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none">
                                               {countableData.condition}
                                             </span>
                                           </div>
                                         </div>
+
                                         {(() => {
-                                          const usageAmount = featureUsageAmounts[feature] !== undefined 
-                                            ? featureUsageAmounts[feature] 
+                                          const usageAmount = featureUsageAmounts[feature] !== undefined
+                                            ? featureUsageAmounts[feature]
                                             : (isLimits ? (countableData?.usageCount ?? 0) : 0);
                                           const countPrice = countableData?.countPrice ?? 0;
                                           const calculatedPrice = usageAmount > 0 && countPrice > 0
-                                            ? (countPrice * usageAmount) * userCount 
+                                            ? (countPrice * usageAmount) * userCount
                                             : 0;
-                                          
+
                                           return calculatedPrice > 0 ? (
-                                            <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-                                              <span className="text-[9px] text-gray-500">Monthly</span>
+                                            <div className="flex items-center justify-between pt-1.5 border-t border-gray-100">
+                                              <span className="text-[9px] text-gray-500">
+                                                {isUsageBased && countableData.eventAggregationMethod && (
+                                                  <>{getAggregationLabel(countableData.eventAggregationMethod)} • </>
+                                                )}
+                                                Monthly
+                                              </span>
                                               <span className="text-xs font-semibold text-emerald-600">
                                                 {formatPrice(calculatedPrice, project?.currency || 'USD')}
                                               </span>
                                             </div>
-                                          ) : null;
+                                          ) : (
+                                            <div className="pt-0.5">
+                                              <span className="text-[9px] text-gray-400">
+                                                {isUsageBased && countableData.eventAggregationMethod && (
+                                                  <>{getAggregationLabel(countableData.eventAggregationMethod)} • </>
+                                                )}
+                                                Enter amount
+                                              </span>
+                                            </div>
+                                          );
                                         })()}
                                       </>
-                                    ) : (
-                                      <span className="text-xs text-gray-500">
-                                        {formatPrice(featureObj.basePrice, project?.currency || 'USD')}
-                                      </span>
-                                    )
-                                  ) : (
-                                    <div className="flex items-baseline gap-1">
-                                      <span className="text-xs font-semibold text-gray-900">
-                                        {formatPrice(featureObj.basePrice, project?.currency || 'USD')}
-                                      </span>
-                                      <span className="text-[10px] text-gray-500">
-                                        /user/month
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => handleRemove(feature)}
-                              className="w-9 h-9 flex justify-center items-center rounded-[8px] shadow-md text-black hover:text-gray-700 border focus:outline-none flex-shrink-0"
-                              aria-label={`Remove ${feature}`}
-                            >
-                              <X size={18} />
-                            </button>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-sm font-semibold text-gray-900">
+                                      {formatPrice(featureObj.basePrice, project?.currency || 'USD')}
+                                    </span>
+                                    <span className="text-[10px] text-gray-500">/user/month</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  
-                  {selected.length > 0 && (
-                    <div className="border-t pt-4 space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Monthly price ({userCount} users):</span>
-                        <span>{formatPrice(
-                          (() => {
-                            if (subscriptionDuration === "month") return calculateBaseMonthlyPrice();
-                            const months = subscriptionDuration === "3months" ? 3 : subscriptionDuration === "6months" ? 6 : subscriptionDuration === "9months" ? 9 : 12;
-                            return calculateBaseMonthlyPrice();
-                          })(),
-                          project?.currency || 'USD'
-                        )}/month</span>
-                      </div>
-                      {(subscriptionDuration === "3months" || subscriptionDuration === "6months" || subscriptionDuration === "9months") && (
-                        <div className="flex justify-between text-gray-600">
-                          <span>Duration ({subscriptionDuration.replace("months"," months")}):</span>
-                          <span>× {subscriptionDuration === "3months" ? 3 : subscriptionDuration === "6months" ? 6 : 9}</span>
                         </div>
-                      )}
-                      {subscriptionDuration === "12months" && (
-                        <div className="flex justify-between text-gray-600">
-                          <span>Duration (12 months):</span>
-                          <span>× 12</span>
-                        </div>
-                      )}
-                      {(subscriptionDuration === "3months" || subscriptionDuration === "6months" || subscriptionDuration === "9months") && (
-                        <div className="flex justify-between text-emerald-600">
-                          <span>Group discount:</span>
-                          <span>
-                            -{(() => {
-                              const mg = project?.monthGroupDiscounts || {};
-                              const months = subscriptionDuration === "3months" ? 3 : subscriptionDuration === "6months" ? 6 : 9;
-                              const discount = mg[String(months)] ?? 0;
-                              const monthly = calculateTotalPrice() / months;
-                              return formatPrice(monthly * months * discount, project?.currency || 'USD');
-                            })()}
-                          </span>
-                        </div>
-                      )}
-                      {subscriptionDuration === "12months" && project?.annualDiscountEnabled && (
-                        <div className="flex justify-between text-emerald-600">
-                          <span>Annual discount:</span>
-                          <span>
-                            -{(() => {
-                              const discount = project?.annualDiscount ?? 0;
-                              const monthly = calculateTotalPrice() / 12;
-                              return formatPrice(monthly * 12 * discount, project?.currency || 'USD');
-                            })()}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-medium border-t pt-2">
-                        <span>Total price:</span>
-                        <span>{formatPrice(calculateTotalPrice(), project?.currency || 'USD')}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </div>
+          </section>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t pt-3 mb-4">
-              <label className="flex items-center gap-2">
-                <User size={18} aria-hidden="true" />
-                <span className="sr-only">Number of users</span>
-                <select 
-                  value={userCount}
-                  onChange={(e) => setUserCount(Number(e.target.value))}
-                  className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-                >
-                  <option value={1}>1</option>
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-              </label>
-              <label className="flex items-center gap-2">
-                <Calendar size={18} aria-hidden="true" />
-                <span className="sr-only">Subscription duration</span>
-                <select 
-                  value={subscriptionDuration}
-                  onChange={(e) => setSubscriptionDuration(e.target.value as "month" | "3months" | "6months" | "9months" | "12months")}
-                  className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-                >
-                  <option value="month">Monthly</option>
-                  {project?.monthGroupDiscounts?.["3"] && project.monthGroupDiscounts["3"] > 0 && (
-                    <option value="3months">3 Months ({Math.round(project.monthGroupDiscounts["3"] * 100)}%)</option>
-                  )}
-                  {project?.monthGroupDiscounts?.["6"] && project.monthGroupDiscounts["6"] > 0 && (
-                    <option value="6months">6 Months ({Math.round(project.monthGroupDiscounts["6"] * 100)}%)</option>
-                  )}
-                  {project?.monthGroupDiscounts?.["9"] && project.monthGroupDiscounts["9"] > 0 && (
-                    <option value="9months">9 Months ({Math.round(project.monthGroupDiscounts["9"] * 100)}%)</option>
-                  )}
-                  {project?.annualDiscountEnabled && project?.annualDiscount && project.annualDiscount > 0 && (
-                    <option value="12months">12 Months ({Math.round(project.annualDiscount * 100)}%)</option>
-                  )}
-                </select>
-              </label>
-              <div className="text-right">
-                <span className="text-gray-500 text-sm">Total Price</span>
-                <div className="font-semibold text-lg">
-                  {selected.length > 0 ? formatPrice(calculateTotalPrice(), project?.currency || 'USD') : "-"}
-                </div>
-                {selected.length > 0 && (
-                  <div className="text-xs text-gray-500">
-                    {subscriptionDuration === "month" ? "per month" :
-                     subscriptionDuration === "3months" ? "for 3 months" :
-                     subscriptionDuration === "6months" ? "for 6 months" :
-                     subscriptionDuration === "9months" ? "for 9 months" : "for 12 months"}
+          {/* Right: Pricing & Subscribe (dashboard web style) */}
+          <section
+            className="md:w-[295px] p-4 flex flex-col bg-[#F8FAFC]"
+            style={{
+              borderTopRightRadius: '18px',
+              borderBottomRightRadius: '18px',
+              borderTopLeftRadius: '0px',
+              borderBottomLeftRadius: '0px',
+            }}
+            aria-labelledby="pricing-heading"
+          >
+            <h3 id="pricing-heading" className="text-base font-medium mb-1">Features</h3>
+            <p className="text-xs text-gray-500 mb-4">You can choose seat and month group.</p>
+
+            <div className="p-4">
+              <div className="flex gap-3 mb-4">
+                <div className="flex-1">
+                  <label className="block text-sm text-gray-700 mb-2">Users</label>
+                  <div className="relative">
+                    <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 z-10 pointer-events-none" aria-hidden="true" />
+                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 z-10 pointer-events-none" aria-hidden="true" />
+                    <select
+                      value={userCount}
+                      onChange={(e) => setUserCount(Number(e.target.value))}
+                      className="w-full border rounded-md pl-10 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 appearance-none bg-white"
+                    >
+                      <option value={1}>1</option>
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="flex flex-col gap-3 p-0">
-              <button
-                onClick={handleSubscribe}
-                className={`flex-1 bg-emerald-600 text-white py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 transition-colors ${
-                  canSubscribe ? 'hover:bg-emerald-700' : 'opacity-50 cursor-not-allowed'
-                }`}
-                disabled={!canSubscribe}
-              >
-                Subscribe now
-              </button>
-              <button
-                onClick={onClose}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-red-300"
-              >
-                Cancel
-              </button>
+                <div className="flex-1">
+                  <label className="block text-sm text-gray-700 mb-2">Select months</label>
+                  <div className="relative">
+                    <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 z-10 pointer-events-none" aria-hidden="true" />
+                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 z-10 pointer-events-none" aria-hidden="true" />
+                    <select
+                      value={subscriptionDuration}
+                      onChange={(e) => setSubscriptionDuration(e.target.value as "month" | "3months" | "6months" | "9months" | "12months")}
+                      className="w-full border rounded-md pl-10 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 appearance-none bg-white"
+                    >
+                      <option value="month">Monthly</option>
+                      {project?.monthGroupDiscounts?.["3"] && project.monthGroupDiscounts["3"] > 0 && (
+                        <option value="3months">3 Months ({Math.round(project.monthGroupDiscounts["3"] * 100)}%)</option>
+                      )}
+                      {project?.monthGroupDiscounts?.["6"] && project.monthGroupDiscounts["6"] > 0 && (
+                        <option value="6months">6 Months ({Math.round(project.monthGroupDiscounts["6"] * 100)}%)</option>
+                      )}
+                      {project?.monthGroupDiscounts?.["9"] && project.monthGroupDiscounts["9"] > 0 && (
+                        <option value="9months">9 Months ({Math.round(project.monthGroupDiscounts["9"] * 100)}%)</option>
+                      )}
+                      {project?.annualDiscountEnabled && project?.annualDiscount && project.annualDiscount > 0 && (
+                        <option value="12months">12 Months ({Math.round(project.annualDiscount * 100)}%)</option>
+                      )}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {(() => {
+                const baseMonthlyPrice = calculateBaseMonthlyPrice();
+                const mg = project?.monthGroupDiscounts || {};
+                let months = 1;
+                let discount = 0;
+                if (subscriptionDuration === "3months") { months = 3; discount = mg["3"] ?? 0; }
+                else if (subscriptionDuration === "6months") { months = 6; discount = mg["6"] ?? 0; }
+                else if (subscriptionDuration === "9months") { months = 9; discount = mg["9"] ?? 0; }
+                else if (subscriptionDuration === "12months") { months = 12; discount = project?.annualDiscountEnabled ? (project?.annualDiscount ?? 0) : 0; }
+                const totalBeforeDiscount = baseMonthlyPrice * months;
+                const discountAmount = totalBeforeDiscount * discount;
+                const totalPrice = calculateTotalPrice();
+
+                return (
+                  <div className="space-y-2 mb-4" style={{ fontSize: '14px' }}>
+                    <div className="flex justify-between items-center">
+                      <span>Monthly Price</span>
+                      <span>{formatPrice(baseMonthlyPrice, project?.currency || 'USD')}/month</span>
+                    </div>
+                    <div className="flex justify-between items-center text-gray-600">
+                      <span>Month duration({months} Months)</span>
+                      <span>x{months}= {formatPrice(totalBeforeDiscount, project?.currency || 'USD')}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-emerald-600">
+                      <span>Total Discount({Math.round(discount * 100)}%)</span>
+                      <span>-{formatPrice(discountAmount, project?.currency || 'USD')}</span>
+                    </div>
+                    <div className="flex justify-between items-center font-semibold text-emerald-600 border-t pt-2 mt-2" style={{ fontSize: '14px' }}>
+                      <span>Total Price</span>
+                      <span>{formatPrice(totalPrice, project?.currency || 'USD')}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleSubscribe}
+                  className={`w-full text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 transition-colors flex items-center justify-center gap-2 ${
+                    canSubscribe ? '' : 'opacity-50 cursor-not-allowed'
+                  }`}
+                  style={{
+                    background: project?.themeSettings?.customPlanButtonColor || project?.themeSettings?.customPlanCardButtonColor || '#298558',
+                    color: project?.themeSettings?.customPlanButtonTextColor || '#FAFAFA',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (canSubscribe) {
+                      e.currentTarget.style.background = project?.themeSettings?.hoverColor || '#3E9D70';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (canSubscribe) {
+                      e.currentTarget.style.background = project?.themeSettings?.customPlanButtonColor || project?.themeSettings?.customPlanCardButtonColor || '#298558';
+                    }
+                  }}
+                  disabled={!canSubscribe}
+                >
+                  <Stamp size={18} />
+                  <span>Subscribe now</span>
+                </button>
+                <button
+                  onClick={onClose}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-red-300 flex items-center justify-center gap-2"
+                >
+                  <X size={18} />
+                  <span>Cancel</span>
+                </button>
+              </div>
             </div>
           </section>
         </div>

@@ -20,7 +20,12 @@ export interface CupricePricingProps {
   apiUrl?: string;
   onPlanSelect?: (plan: SharedPlan) => void;
   onCustomPlanClick?: () => void;
-  onCustomPlanSubscribe?: (selectedFeatures: string[], userCount: number, duration: string, featureUsageAmounts?: Record<string, number>) => void;
+  onCustomPlanSubscribe?: (
+    selectedFeatures: string[],
+    userCount: number,
+    duration: string,
+    featureUsageAmounts?: Record<string, number>
+  ) => void | Promise<void>;
   className?: string;
 }
 
@@ -309,11 +314,13 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
     }
   };
 
-  const handleCustomPlanSubscribe = (selectedFeatures: string[], userCount: number, duration: string, featureUsageAmounts?: Record<string, number>) => {
-    if (onCustomPlanSubscribe) {
-      onCustomPlanSubscribe(selectedFeatures, userCount, duration, featureUsageAmounts);
-    }
-    setIsCustomModalOpen(false);
+  const handleCustomPlanSubscribe = (
+    selectedFeatures: string[],
+    userCount: number,
+    duration: string,
+    featureUsageAmounts?: Record<string, number>
+  ) => {
+    return onCustomPlanSubscribe?.(selectedFeatures, userCount, duration, featureUsageAmounts);
   };
 
   // Scope custom CSS to only affect this pricing container
@@ -718,7 +725,7 @@ const CupricePricing: React.FC<CupricePricingProps> = ({
         isOpen={isCustomModalOpen} 
         onClose={() => setIsCustomModalOpen(false)} 
         project={project}
-        onSubscribe={handleCustomPlanSubscribe}
+        onSubscribe={onCustomPlanSubscribe ? handleCustomPlanSubscribe : undefined}
       />
       </main>
     </div>

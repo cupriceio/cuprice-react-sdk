@@ -16,8 +16,8 @@ pnpm add @cuprice/react-sdk
 
 ```tsx
 import { CupricePricing } from '@cuprice/react-sdk';
-// Styles are automatically included, but you can import them explicitly if needed:
-// import '@cuprice/react-sdk/dist/index.css';
+// Import styles explicitly if your bundler doesn't pick them up automatically:
+import '@cuprice/react-sdk/dist/index.css';
 
 function App() {
   return (
@@ -25,21 +25,27 @@ function App() {
       shareId="your-share-id-here"
       apiUrl="https://your-api-domain.com" // Optional: defaults to current origin
       onPlanSelect={(plan) => {
-        console.log('Plan selected:', plan);
-        // Handle plan selection (e.g., redirect to checkout)
+        // Example: open your checkout with `plan.id`
+        // (the SDK does not perform checkout for you)
+        console.log('Plan selected:', plan.id);
       }}
       onCustomPlanClick={() => {
-        console.log('Custom plan clicked');
-        // Handle custom plan modal open
+        // Optional: analytics hook (the SDK opens the modal automatically)
+        console.log('Custom plan builder opened');
       }}
-      onCustomPlanSubscribe={(features, userCount, duration, featureUsageAmounts) => {
-        console.log('Custom plan subscribe:', { 
-          features, 
-          userCount, 
-          duration,
-          featureUsageAmounts // Usage amounts for usage-based/limits features
+      onCustomPlanSubscribe={async (features, userCount, duration, featureUsageAmounts) => {
+        // Called when user clicks "Subscribe now" in the custom plan modal.
+        // If you return a Promise, the modal shows "Processing..." and closes on success.
+        await fetch('/api/subscribe/custom', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            features,
+            userCount,
+            duration,
+            featureUsageAmounts, // keyed by feature name
+          }),
         });
-        // Handle custom plan subscription
       }}
     />
   );
@@ -55,8 +61,8 @@ function App() {
 | `shareId` | `string` | Yes | The share ID of your pricing project |
 | `apiUrl` | `string` | No | Base URL for the API. Defaults to `window.location.origin` |
 | `onPlanSelect` | `(plan: SharedPlan) => void` | No | Callback when a pricing plan is selected |
-| `onCustomPlanClick` | `() => void` | No | Callback when the custom plan button is clicked |
-| `onCustomPlanSubscribe` | `(features: string[], userCount: number, duration: string, featureUsageAmounts?: Record<string, number>) => void` | No | Callback when user subscribes to a custom plan. Includes usage amounts for usage-based/limits features |
+| `onCustomPlanClick` | `() => void` | No | Optional analytics callback when the custom plan builder is opened (the modal open is handled by the SDK) |
+| `onCustomPlanSubscribe` | `(features: string[], userCount: number, duration: string, featureUsageAmounts?: Record<string, number>) => void \| Promise<void>` | No | Callback when user clicks “Subscribe now” in the custom plan modal. If you return a Promise, the modal shows a processing state and closes on success. |
 | `className` | `string` | No | Additional CSS classes to apply to the root element |
 
 ## Features
@@ -181,7 +187,7 @@ Example custom CSS:
 
 ## Feature Types
 
-The SDK supports three feature types:
+The SDK supports three feature types (values come from your backend; commonly `Standard`, `Usage Based`, and `Limits`):
 
 ### Standard Features
 Standard per-user pricing features with a fixed base price.
@@ -256,7 +262,9 @@ import {
 } from '@cuprice/react-sdk';
 ```
 
-### Type Definitions
+### Key Types (simplified)
+
+The SDK exports full TypeScript types. The snippets below are intentionally simplified for documentation (some fields are omitted). For the complete definitions, rely on your editor’s type hints from `@cuprice/react-sdk`.
 
 #### `SharedProject`
 ```typescript
@@ -264,7 +272,7 @@ interface SharedProject {
   id: number;
   name: string;
   description?: string;
-  currency: Currency;
+  currency: Currency; // 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD'
   shareId?: string;
   annualDiscount: number;
   annualDiscountEnabled?: boolean;
@@ -281,6 +289,7 @@ interface SharedPlan {
   id: number;
   name: string;
   description?: string;
+  projectId: number;
   order: number;
   isPopular: boolean;
   isVisible: boolean;
@@ -297,7 +306,7 @@ interface Feature {
   id: number;
   name: string;
   description?: string;
-  featureType: "Standard" | "Usage Based" | "Limits";
+  featureType: string; // commonly: 'Standard' | 'Usage Based' | 'Limits'
   basePrice: number;
   countableData?: {
     id: number;
@@ -325,38 +334,26 @@ function PricingPage() {
 
 ```tsx
 import { CupricePricing } from '@cuprice/react-sdk';
-import { useRouter } from 'next/router';
 
 function PricingPage() {
-  const router = useRouter();
-
   const handlePlanSelect = (plan) => {
-    // Redirect to checkout with plan ID
-    router.push(`/checkout?planId=${plan.id}`);
+    // Example: redirect to your checkout page with plan ID
+    window.location.href = `/checkout?planId=${plan.id}`;
   };
 
-  const handleCustomSubscribe = (
+  const handleCustomSubscribe = async (
     features, 
     userCount, 
     duration, 
     featureUsageAmounts
   ) => {
-    // Create custom plan with usage amounts
-    const params = new URLSearchParams({
-      custom: 'true',
-      features: features.join(','),
-      userCount: userCount.toString(),
-      duration,
+    // Send the selected configuration to your backend.
+    // If you return a Promise, the SDK modal shows a processing state and closes on success.
+    await fetch('/api/subscribe/custom', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ features, userCount, duration, featureUsageAmounts }),
     });
-    
-    // Add usage amounts for usage-based/limits features
-    if (featureUsageAmounts) {
-      Object.entries(featureUsageAmounts).forEach(([feature, amount]) => {
-        params.append(`usage[${feature}]`, amount.toString());
-      });
-    }
-    
-    router.push(`/checkout?${params.toString()}`);
   };
 
   return (
@@ -390,33 +387,24 @@ function PricingPage() {
 import { CupricePricing } from '@cuprice/react-sdk';
 
 function PricingPage() {
-  const handleCustomSubscribe = (
+  const handleCustomSubscribe = async (
     features, 
     userCount, 
     duration, 
     featureUsageAmounts
   ) => {
-    console.log('Selected features:', features);
-    console.log('User count:', userCount);
-    console.log('Duration:', duration);
-    
     // featureUsageAmounts contains usage amounts for usage-based/limits features
     // Example: { "API Calls": 10000, "Storage": 500 }
-    if (featureUsageAmounts) {
-      console.log('Usage amounts:', featureUsageAmounts);
-      
-      // Send to your backend API
-      fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          features,
-          userCount,
-          duration,
-          featureUsageAmounts,
-        }),
-      });
-    }
+    await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        features,
+        userCount,
+        duration,
+        featureUsageAmounts,
+      }),
+    });
   };
 
   return (
